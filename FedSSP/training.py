@@ -26,7 +26,7 @@ def proscess_loader(loader, device, model_for_masks):
     return preprocessed_batches
 
 def run_fedSSP(args, clients, server, COMMUNICATION_ROUNDS, local_epoch, samp=None, frac=1.0, summary_writer=None):
-    device = torch.device('cuda:0')
+    device = torch.device(args.device)
     if samp is None:
         sampling_fn = server.randomSample_clients
         frac = 1.0
