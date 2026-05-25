@@ -116,7 +116,7 @@ if __name__ == '__main__':
     print("\nDone setting up devices.")
 
     if 'fedSSP' in args.alg:
-        sw_path = os.path.join(args.outbase, 'raw', 'tensorboard', f'{args.data_group}_{args.alg}_{args.type_init}_{args.repeat}')
+        sw_path = os.path.join(args.outbase, 'raw', 'tensorboard', f'{args.data_group}_{args.alg}_{args.type_init}_{args.repeat}_{args.spectral_mode}')
     else:
         sw_path = os.path.join(args.outbase, 'raw', 'tensorboard', f'{args.data_group}_{args.alg}_{args.repeat}')
     summary_writer = SummaryWriter(sw_path)
