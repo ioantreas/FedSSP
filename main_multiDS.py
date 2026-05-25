@@ -9,6 +9,15 @@ from tensorboardX import SummaryWriter
 from pathlib import Path
 import numpy as np
 
+
+def dgl_cuda_is_available():
+    try:
+        import dgl
+        _ = dgl.graph(([], []), num_nodes=0).to(torch.device('cuda:0'))
+        return True
+    except Exception:
+        return False
+
 def process_fedSSP(args, clients, server, summary_writer):
     print("\nDone setting up FedSSP devices.")
 
@@ -83,7 +92,7 @@ if __name__ == '__main__':
     torch.manual_seed(args.seed)
     torch.cuda.manual_seed(args.seed)
 
-    args.device = "cuda" if torch.cuda.is_available() else "cpu"
+    args.device = "cuda" if torch.cuda.is_available() and dgl_cuda_is_available() else "cpu"
 
     outpath = os.path.join(args.outbase, 'raw', args.data_group)
     Path(outpath).mkdir(parents=True, exist_ok=True)
