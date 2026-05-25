@@ -98,6 +98,7 @@ def run_fedSSP(args, clients, server, COMMUNICATION_ROUNDS, local_epoch, samp=No
                 args.outbase,
                 "raw",
                 args.data_group,
+                args.spectral_mode if 'fedSSP' in args.alg else "other",
                 f"{args.repeat}_metrics_{args.alg}_{args.type_init}.csv"
             )
 
