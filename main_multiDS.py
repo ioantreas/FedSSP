@@ -81,6 +81,7 @@ if __name__ == '__main__':
     parser.add_argument('-mo', "--momentum", type=float, default=0.5)
     parser.add_argument('-tau', "--tau_weight", type=float, default=100.0)
     parser.add_argument('-head', "--head", type=float, default=4)
+    parser.add_argument('--mean_mode', type=str, default='none', choices=['none', 'batches', 'epochs', 'full'])
     try:
         args = parser.parse_args()
     except IOError as msg:
@@ -93,6 +94,10 @@ if __name__ == '__main__':
     torch.cuda.manual_seed(args.seed)
 
     args.device = "cuda" if torch.cuda.is_available() and dgl_cuda_is_available() else "cpu"
+
+    print("Device:", args.device)
+    if torch.cuda.is_available():
+        print("GPU: ", torch.cuda.get_device_name(0))
 
     outpath = os.path.join(args.outbase, 'raw', args.data_group)
     Path(outpath).mkdir(parents=True, exist_ok=True)

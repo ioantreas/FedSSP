@@ -1,4 +1,9 @@
-.venv
-Data1
-__pycache__
+.idea/
+Data*
+*.iml
+*.log
+*.tmp
 outputs
+*.pyc
+**/__pycache__/
+.venv
