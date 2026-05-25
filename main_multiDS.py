@@ -103,7 +103,7 @@ if __name__ == '__main__':
     if torch.cuda.is_available():
         print("GPU: ", torch.cuda.get_device_name(0))
 
-    outpath = os.path.join(args.outbase, 'raw', args.data_group)
+    outpath = os.path.join(args.outbase, 'raw', args.data_group, args.spectral_mode if 'fedSSP' in args.alg else "other")
     Path(outpath).mkdir(parents=True, exist_ok=True)
 
     print("Preparing data ...")
@@ -116,8 +116,10 @@ if __name__ == '__main__':
     print("\nDone setting up devices.")
 
     if 'fedSSP' in args.alg:
+        Path(os.path.join(args.outbase, 'raw', 'tensorboard', f"{args.spectral_mode}")).mkdir(parents=True, exist_ok=True)
         sw_path = os.path.join(args.outbase, 'raw', 'tensorboard', f"{args.spectral_mode}", f'{args.data_group}_{args.alg}_{args.type_init}_{args.repeat}_{args.spectral_mode}')
     else:
+        Path(os.path.join(args.outbase, 'raw', 'tensorboard', "other")).mkdir(parents=True, exist_ok=True)
         sw_path = os.path.join(args.outbase, 'raw', 'tensorboard', "other", f'{args.data_group}_{args.alg}_{args.repeat}')
     summary_writer = SummaryWriter(sw_path)
 
