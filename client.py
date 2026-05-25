@@ -17,7 +17,7 @@ def hash_batch(batch):
             hash_obj.update(data.x.cpu().numpy().tobytes())
     return hash_obj.hexdigest()
 
-def collate_pyg_to_dgl(batch):
+def collate_pyg_to_dgl(batch, spectral_mode='full', spectral_k=None):
     dir_path = os.path.join(os.path.dirname(__file__), '..', 'preprocessed_batch')
     if not os.path.exists(dir_path):
         os.makedirs(dir_path, exist_ok=True)
@@ -32,9 +32,17 @@ def collate_pyg_to_dgl(batch):
         N = data.num_nodes
         edge_index, _ = add_self_loops(data.edge_index)
         adj = to_dense_adj(edge_index, max_num_nodes=N).squeeze(0)
-        D = torch.diag(torch.sum(adj, dim=1))
-        L = D - adj
-        e, u = torch.linalg.eigh(L)
+
+        # SPECTRAL PROCESSING MODE
+        # Identity - dummy, no computation to check how much computation the real computation takes
+        if spectral_mode == 'identity':
+            D = torch.diag(torch.sum(adj, dim=1))
+            e = torch.zeros(N, dtype=adj.dtype, device=adj.device)
+            u = torch.eye(N, dtype=adj.dtype, device=adj.device)
+        else:
+            D = torch.diag(torch.sum(adj, dim=1))
+            L = D - adj
+            e, u = torch.linalg.eigh(L)
 
         pad_e = e.new_zeros([max_nodes])
         pad_e[:N] = e

@@ -6,11 +6,11 @@ import torch
 import time
 import numpy as np
 
-def proscess_loader(loader, device):
+def proscess_loader(loader, device, spectral_mode='full', spectral_k=None):
     preprocessed_batches = []
     for batch in loader:
         batch.to(device)
-        e, u, g, length, valid_indices = collate_pyg_to_dgl(batch)
+        e, u, g, length, valid_indices = collate_pyg_to_dgl(batch, spectral_mode=spectral_mode, spectral_k=spectral_k)
         valid_labels = batch.y[valid_indices].to(device)
         preprocessed_batches.append((e.to(device), u.to(device), g.to(device), length.to(device), valid_labels, len(valid_indices)))
     return preprocessed_batches
@@ -24,9 +24,10 @@ def run_fedSSP(args, clients, server, COMMUNICATION_ROUNDS, local_epoch, samp=No
     for client in clients:
         dataloaders = client.dataLoader
         train_loader, val_loader, test_loader = dataloaders['train'], dataloaders['val'], dataloaders['test']
-        client.train_preprocessed_batches = proscess_loader(train_loader, device)
-        client.test_preprocessed_batches = proscess_loader(test_loader, device)
-        client.val_preprocessed_batches = proscess_loader(val_loader, device)
+        spectral_k = getattr(args, 'spectral_k', None)
+        client.train_preprocessed_batches = proscess_loader(train_loader, device, spectral_mode=args.spectral_mode, spectral_k=spectral_k)
+        client.test_preprocessed_batches = proscess_loader(test_loader, device, spectral_mode=args.spectral_mode, spectral_k=spectral_k)
+        client.val_preprocessed_batches = proscess_loader(val_loader, device, spectral_mode=args.spectral_mode, spectral_k=spectral_k)
         server.clients = clients
         server.selected_clients = clients
         client.train_samples = len(train_loader)
