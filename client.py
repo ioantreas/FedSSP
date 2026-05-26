@@ -36,10 +36,12 @@ def collate_pyg_to_dgl(batch, spectral_mode='full', spectral_k=None):
         # SPECTRAL PROCESSING MODE
         # Identity - dummy, no computation to check how much computation the real computation takes
         if spectral_mode == 'identity':
+            print("doing identity spectral processing")
             D = torch.diag(torch.sum(adj, dim=1))
             e = torch.zeros(N, dtype=adj.dtype, device=adj.device)
             u = torch.eye(N, dtype=adj.dtype, device=adj.device)
         else:
+            print("doing full spectral processing")
             D = torch.diag(torch.sum(adj, dim=1))
             L = D - adj
             e, u = torch.linalg.eigh(L)
