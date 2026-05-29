@@ -7,3 +7,5 @@ outputs
 *.pyc
 **/__pycache__/
 .venv
+slurm-*
+submit.sh
