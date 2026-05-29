@@ -21,6 +21,7 @@ def run_fedSSP(args, clients, server, COMMUNICATION_ROUNDS, local_epoch, samp=No
         sampling_fn = server.randomSample_clients
         frac = 1.0
 
+    preprocessing_start_time = time.time()
     for client in clients:
         dataloaders = client.dataLoader
         train_loader, val_loader, test_loader = dataloaders['train'], dataloaders['val'], dataloaders['test']
@@ -31,6 +32,7 @@ def run_fedSSP(args, clients, server, COMMUNICATION_ROUNDS, local_epoch, samp=No
         server.clients = clients
         server.selected_clients = clients
         client.train_samples = len(train_loader)
+    preprocessing_duration = time.time() - preprocessing_start_time
 
     start_time = time.time()
     round_times = []
@@ -105,7 +107,7 @@ def run_fedSSP(args, clients, server, COMMUNICATION_ROUNDS, local_epoch, samp=No
             if not os.path.exists(csv_path):
                 with open(csv_path, "w") as f:
                     f.write(
-                        "round,mean_acc,std_acc,round_time,total_time\n"
+                        "round,mean_acc,std_acc,round_time,total_time,preprocessing_time\n"
                     )
 
             with open(csv_path, "a") as f:
@@ -114,13 +116,15 @@ def run_fedSSP(args, clients, server, COMMUNICATION_ROUNDS, local_epoch, samp=No
                     f"{mean_acc},"
                     f"{std_acc},"
                     f"{round_elapsed},"
-                    f"{total_elapsed}\n"
+                    f"{total_elapsed},"
+                    f"{preprocessing_duration}\n"
                 )
 
             summary_writer.add_scalar(f'Test/Acc/Mean_{args.alg}', mean_acc, c_round)
             summary_writer.add_scalar(f'Test/Acc/Std_{args.alg}', std_acc, c_round)
             summary_writer.add_scalar('Time/Round_Seconds', round_elapsed, c_round)
             summary_writer.add_scalar('Time/Total_Seconds', total_elapsed, c_round)
+            summary_writer.add_scalar('Time/Preprocessing_Seconds', preprocessing_duration, c_round)
 
     frame = pd.DataFrame()
     for client in clients:
