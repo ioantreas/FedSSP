@@ -21,6 +21,16 @@ def hash_batch(batch):
     return hash_obj.hexdigest()
 
 def _spectral_decomposition(adj, spectral_mode='full', spectral_k=None):
+    """Spectral decomposition methods for improvements testing
+
+    Args:
+        adj: Graph adjacency matrix
+        spectral_momde: Mode for spectral decomposition, can be: [full, identity, topk, chebyshev]
+        spectral_k: Number of top eigenvectors to compute when using topk decomposition
+
+    Returns:
+        (eigenvectors, eigenvalues)
+    """
     N = adj.size(0)
     D = torch.diag(torch.sum(adj, dim=1))
     L = D - adj
