@@ -4,6 +4,9 @@ import pickle
 import torch
 import dgl
 import copy
+import numpy as np
+import scipy.sparse as sp
+from scipy.sparse.linalg import eigsh
 from torch_geometric.utils import to_dense_adj
 from torch_geometric.utils import add_self_loops
 from models import Split_model
@@ -17,11 +20,80 @@ def hash_batch(batch):
             hash_obj.update(data.x.cpu().numpy().tobytes())
     return hash_obj.hexdigest()
 
+def _spectral_decomposition(adj, spectral_mode='full', spectral_k=None):
+    N = adj.size(0)
+    D = torch.diag(torch.sum(adj, dim=1))
+    L = D - adj
+
+    if spectral_mode == 'identity':
+        e = torch.zeros(N, dtype=adj.dtype, device=adj.device)
+        u = torch.eye(N, dtype=adj.dtype, device=adj.device)
+        return e, u
+
+    if spectral_mode == 'full':
+        return torch.linalg.eigh(L)
+
+    if spectral_mode == 'topk':
+        if N == 1:
+            return torch.linalg.eigh(L)
+        if spectral_k is None:
+            spectral_k = min(N - 1, 16)
+        k = min(max(1, spectral_k), N - 1)
+        L_np = L.detach().cpu().numpy().astype(np.float64)
+        sparse_L = sp.csr_matrix(L_np)
+        try:
+            e_np, u_np = eigsh(sparse_L, k=k, which='SM')
+            order = np.argsort(e_np)
+            e_np = e_np[order]
+            u_np = u_np[:, order]
+        except Exception:
+            return torch.linalg.eigh(L)
+
+        e = torch.zeros(N, dtype=adj.dtype, device=adj.device)
+        u = torch.zeros((N, N), dtype=adj.dtype, device=adj.device)
+        e[:k] = torch.from_numpy(e_np).to(device=adj.device, dtype=adj.dtype)
+        u[:, :k] = torch.from_numpy(u_np).to(device=adj.device, dtype=adj.dtype)
+        return e, u
+
+    if spectral_mode == 'chebyshev':
+        # Chebyshev mode avoids eigendecomposition by approximating the spectrum
+        # with polynomial diffusion features derived from the normalized Laplacian.
+        eps = 1e-6
+        deg = torch.sum(adj, dim=1)
+        inv_sqrt_deg = torch.pow(deg + eps, -0.5)
+        inv_sqrt_deg = torch.diag(inv_sqrt_deg)
+        identity = torch.eye(N, dtype=adj.dtype, device=adj.device)
+        normalized_adj = inv_sqrt_deg @ adj @ inv_sqrt_deg
+        normalized_laplacian = identity - normalized_adj
+
+        # Normalized Laplacian has spectrum in [0, 2], so this maps it to roughly [-1, 1].
+        scaled_laplacian = normalized_laplacian - identity
+
+        degree = spectral_k if spectral_k is not None else min(N, 8)
+        degree = max(1, degree)
+
+        cheb_terms = [identity]
+        if degree > 1:
+            cheb_terms.append(scaled_laplacian)
+        for _ in range(2, degree):
+            cheb_terms.append(2 * scaled_laplacian @ cheb_terms[-1] - cheb_terms[-2])
+
+        cheb_stack = torch.stack(cheb_terms, dim=0)
+        cheb_summary = cheb_stack.mean(dim=0)
+        e = cheb_summary.diag().clone()
+        u = cheb_summary
+        return e, u
+
+    raise ValueError(f"Unsupported spectral_mode: {spectral_mode}")
+
 def collate_pyg_to_dgl(batch, spectral_mode='full', spectral_k=None):
     dir_path = os.path.join(os.path.dirname(__file__), '..', 'preprocessed_batch')
     if not os.path.exists(dir_path):
         os.makedirs(dir_path, exist_ok=True)
-    file_name = os.path.join(dir_path, f"{hash_batch(batch)}.pkl")
+    spectral_suffix = f"{spectral_mode}"
+    if spectral_k is not None:
+        spectral_suffix = f"{spectral_suffix}_k{spectral_k}"
+    file_name = os.path.join(dir_path, f"{hash_batch(batch)}_{spectral_suffix}.pkl")
     filtered_data_list = [data for data in batch.to_data_list() if data.edge_index.size(1) > 0]
     valid_indices = [i for i, data in enumerate(batch.to_data_list()) if data.edge_index.size(1) > 0]
     max_nodes = max([data.num_nodes for data in filtered_data_list], default=0)
@@ -33,18 +105,7 @@ def collate_pyg_to_dgl(batch, spectral_mode='full', spectral_k=None):
         edge_index, _ = add_self_loops(data.edge_index)
         adj = to_dense_adj(edge_index, max_num_nodes=N).squeeze(0)
 
-        # SPECTRAL PROCESSING MODE
-        # Identity - dummy, no computation to check how much computation the real computation takes
-        if spectral_mode == 'identity':
-            # print("doing identity spectral processing")
-            D = torch.diag(torch.sum(adj, dim=1))
-            e = torch.zeros(N, dtype=adj.dtype, device=adj.device)
-            u = torch.eye(N, dtype=adj.dtype, device=adj.device)
-        elif spectral_mode == 'full':
-            # print("doing full spectral processing")
-            D = torch.diag(torch.sum(adj, dim=1))
-            L = D - adj
-            e, u = torch.linalg.eigh(L)
+        e, u = _spectral_decomposition(adj, spectral_mode=spectral_mode, spectral_k=spectral_k)
 
         pad_e = e.new_zeros([max_nodes])
         pad_e[:N] = e

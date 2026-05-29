@@ -82,8 +82,9 @@ if __name__ == '__main__':
     parser.add_argument('-tau', "--tau_weight", type=float, default=100.0)
     parser.add_argument('-head', "--head", type=float, default=4)
     parser.add_argument('--mean_mode', type=str, default='none', choices=['none', 'batches', 'epochs', 'full'])
-    parser.add_argument('--spectral_mode', type=str, default='full', choices=['full', 'identity'],
-                        help='Spectral preprocessing mode: full eigendecomposition or identity (fast)')
+    parser.add_argument('--spectral_mode', type=str, default='full',
+                        choices=['full', 'identity', 'topk', 'chebyshev'],
+                        help='Spectral preprocessing mode')
     parser.add_argument('--spectral_k', type=int, default=None,
                         help='Number of eigenpairs for top-k spectral mode (not used for identity)')
     try:
