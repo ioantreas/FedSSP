@@ -142,8 +142,8 @@ def collate_pyg_to_dgl(batch, spectral_mode='full', spectral_k=None):
 
     g = dgl.batch(graphs)
 
-    with open(file_name, 'wb') as f:
-        pickle.dump((E, U, g, lengths), f)
+    #with open(file_name, 'wb') as f:
+    #    pickle.dump((E, U, g, lengths), f)
 
     return E, U, g, lengths, valid_indices
 
