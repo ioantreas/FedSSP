@@ -10,4 +10,3 @@ FedSSP/outputs/raw/plots
 */outputs
 .venv
 slurm-*
-submit.sh
