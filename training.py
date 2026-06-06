@@ -31,6 +31,10 @@ def run_fedSSP(args, clients, server, COMMUNICATION_ROUNDS, local_epoch, samp=No
         server.selected_clients = clients
         client.train_samples = len(train_loader)
 
+    # --- Cosine similarity aggregation state initialisation ---
+    # Record the common initialisation
+    server.snapshot_reference(clients)
+
     start_time = time.time()
     round_times = []
     for c_round in range(1, COMMUNICATION_ROUNDS + 1):
@@ -58,8 +62,12 @@ def run_fedSSP(args, clients, server, COMMUNICATION_ROUNDS, local_epoch, samp=No
             for client in server.selected_clients:
                 client.global_consensus = global_consensus.data.clone()
             server.receive_models_SSP()
-            server.aggregate_parameters_SSP()
-            server.send_models_SSP()
+            # server.aggregate_parameters_SSP()
+            # server.send_models_SSP()
+
+            # --- cosine similarity aggregation ---
+            server.aggregate_cos_sim_based_SSP(temperature=args.sim_temp, sim_source=args.sim_source)
+            server.send_cos_sim_aggreagted_SSP()
 
         else:
             tot_samples = 0
