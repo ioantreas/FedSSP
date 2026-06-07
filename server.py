@@ -5,6 +5,7 @@ import networkx as nx
 from dtaidistance import dtw
 from client import clientAvgSSP
 import copy
+import torch.nn.functional as F
 
 class Server():
     def __init__(self, model, device):
@@ -101,12 +102,12 @@ class Server():
             self.distributed[client.id] = self._flatten_shared(client.model.base)
 
     def aggregate_cos_sim_based_SSP(self, temperature=0.5, sim_source='delta'):
-        """Build one personalized model per client.
+        """Build one client model per client.
 
-        For each pair (i, j) we measure how similar client i's update is to
-        client j's update via cosine similarity, normalize those similarities
-        across j (softmax with `temperature`), and form client i's model as the
-        similarity-weighted sum of all clients' shared (spectral-encoder)
+        For each pair of clients we measure how similar their spectral-encoder
+        vectors are via cosine similarity, normalize those similarities across the
+        row (softmax with `temperature`), and form each client's model as the
+        similarity-weighted sum of every client's shared (spectral-encoder)
         weights. Non-shared parameters are left untouched (they stay local).
 
         sim_source:
@@ -117,48 +118,55 @@ class Server():
         """
         assert (len(self.uploaded_models) > 0)
 
-        ids = self.uploaded_ids
-        models = self.uploaded_models
-        N = len(ids)
+        client_ids = self.uploaded_ids  # client id for each uploaded model
+        client_bases = self.uploaded_models  # the uploaded SSP base modules
+        num_clients = len(client_ids)
 
-        # 1) current shared-weight vector for each client (aligned with ids/models)
-        cur_vecs = [self._flatten_shared(m) for m in models]
+        # 1) Flatten each client's SHARED spectral-encoder weights into one vector.
+        current_encoder_vectors = [self._flatten_shared(base) for base in client_bases]
 
-        # 2) form the vectors we compute similarity on
-        use_delta = (sim_source == 'delta') and all(cid in self.distributed for cid in ids)
+        # 2) Decide what vector to compare: this round's update (delta) or the
+        #    raw weights. Delta = current shared weights - what we last sent them.
+        have_reference_for_all = all(cid in self.distributed for cid in client_ids)
+        use_delta = (sim_source == 'delta') and have_reference_for_all
         if use_delta:
-            updates = [cur - self.distributed[cid] for cid, cur in zip(ids, cur_vecs)]
+            similarity_vectors = [
+                current_vec - self.distributed[cid]
+                for cid, current_vec in zip(client_ids, current_encoder_vectors)
+            ]
         else:
-            updates = cur_vecs
+            similarity_vectors = current_encoder_vectors
 
-        M = torch.stack(updates)  # [N, P]
+        # 3) Pairwise cosine similarity between clients.
+        stacked_vectors = torch.stack(similarity_vectors)  # [num_clients, num_params]
+        unit_vectors = F.normalize(stacked_vectors, dim=1, eps=1e-12)
+        similarity_matrix = unit_vectors @ unit_vectors.t()  # [num_clients, num_clients], in [-1, 1]
+        self.sim_matrix = similarity_matrix.detach().clone()
 
-        # 3) pairwise cosine similarity (eps guards against zero-norm updates)
-        Mn = F.normalize(M, dim=1, eps=1e-12)  # row-wise L2 normalize
-        S = Mn @ Mn.t()  # [N, N], entries in [-1, 1]
-        self.sim_matrix = S.detach().clone()
+        # 4) Turn similarities into aggregation weights. Softmax per row keeps
+        #    weights positive, summing to 1, and handles negative similarities.
+        #    aggregation_weights[i, j] = weight of client j in client i's model.
+        aggregation_weights = torch.softmax(similarity_matrix / temperature, dim=1)
+        self.agg_weights = aggregation_weights.detach().clone()
 
-        # 4) normalize similarities into per-client aggregation weights
-        #    softmax keeps everything positive, summing to 1, and handles
-        #    negative cosine similarities gracefully.
-        Wn = torch.softmax(S / temperature, dim=1)  # [N, N], rows sum to 1
-        self.agg_weights = Wn.detach().clone()
-
-        # 5) build a personalized model for every client
-        shared_dicts = [dict(self._shared_named(m)) for m in models]
-        names = [n for n, _ in self._shared_named(models[0])]
+        # 5) Build the client model for each client.
+        shared_params_per_client = [dict(self._shared_named(base)) for base in client_bases]
+        shared_param_names = [name for name, _ in self._shared_named(client_bases[0])]
 
         self.client_models = {}
-        for i, cid in enumerate(ids):
-            pmodel = copy.deepcopy(models[i])  # non-shared params kept (harmless)
-            pshared = dict(self._shared_named(pmodel))
-            for name in names:
-                acc = torch.zeros_like(pshared[name].data)
-                for j in range(N):
-                    acc += Wn[i, j] * shared_dicts[j][name].data
-                pshared[name].data.copy_(acc)
-            self.client_models[cid] = pmodel
+        for target_idx, target_id in enumerate(client_ids):
+            # Copy this client's base so non-shared params stay its own (harmless).
+            client_model = copy.deepcopy(client_bases[target_idx])
+            client_model_shared_params = dict(self._shared_named(client_model))
 
+            for name in shared_param_names:
+                weighted_sum = torch.zeros_like(client_model_shared_params[name].data)
+                for source_idx in range(num_clients):
+                    weight = aggregation_weights[target_idx, source_idx]
+                    weighted_sum += weight * shared_params_per_client[source_idx][name].data
+                client_model_shared_params[name].data.copy_(weighted_sum)
+
+            self.client_models[target_id] = client_model
     def send_cos_sim_aggreagted_SSP(self):
         """Send each client its own personalized model and update the reference
         used for next round's update delta."""

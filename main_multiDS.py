@@ -73,6 +73,17 @@ if __name__ == '__main__':
     parser.add_argument('-tau', "--tau_weight", type=float, default=100.0)
     parser.add_argument('-head', "--head", type=float, default=4)
     parser.add_argument('--mean_mode', type=str, default='none', choices=['none', 'batches', 'epochs', 'full'])
+
+    # --- cosine-similarity aggregation ---
+    parser.add_argument('--sim_temp', type=float, default=0.5,
+                        help='Softmax temperature for normalizing cosine-similarity '
+                             'aggregation weights. Lower = sharper (more personalized); '
+                             'higher = flatter (closer to uniform averaging).')
+    parser.add_argument('--sim_source', type=str, default='delta', choices=['delta', 'weights'],
+                        help="Vectors used for cosine similarity: 'delta' = this round's "
+                             "update (current shared weights minus last distributed); "
+                             "'weights' = raw shared weights.")
+
     try:
         args = parser.parse_args()
     except IOError as msg:
