@@ -83,38 +83,32 @@ class Server():
     # ------------------------------------------------------------------ #
     @staticmethod
     def _shared_named(model):
-        """Named parameters that are actually shared/aggregated (the spectral
-        encoders): name contains 'encoder' but not 'atom'. Returns a list so the
-        ordering is deterministic and identical across clients."""
+        """Extract what is actually aggregated on the server (i.e. the eigenvalue and the filter encoders)"""
         return [(n, p) for n, p in model.named_parameters()
                 if 'encoder' in n and 'atom' not in n]
 
     def _flatten_shared(self, model):
-        """Flatten the shared parameters of a model into a single 1D vector."""
+        """Flatten the shared params into a single vector so that cosine similarity can be applied"""
         return torch.cat([p.data.flatten() for _, p in self._shared_named(model)]).detach().clone()
 
     def snapshot_reference(self, clients):
-        """Record the initial shared weights of every client. This becomes the
-        reference point for the first 'update' delta. Call once before training
-        starts (while all clients still hold the common initialization)."""
+        """Call at the beginning of training to record the initial shared parameters
+        of each client as a reference for computing deltas."""
         self.distributed = {}
         for client in clients:
             self.distributed[client.id] = self._flatten_shared(client.model.base)
 
     def aggregate_cos_sim_based_SSP(self, temperature=0.5, sim_source='weights'):
-        """Build one client model per client.
-
-        For each pair of clients we measure how similar their spectral-encoder
+        """Build one client model per client. For each pair of clients we measure how similar their spectral-encoder
         vectors are via cosine similarity, normalize those similarities across the
         row (softmax with `temperature`), and form each client's model as the
         similarity-weighted sum of every client's shared (spectral-encoder)
         weights. Non-shared parameters are left untouched (they stay local).
 
         sim_source:
-            'delta'   -> similarity computed on this round's update
-                         (current shared weights - last distributed weights).
-                         More discriminative; matches the paper's Δθ framing.
-            'weights' -> similarity computed on the raw shared weights.
+            'delta': similarity computed (current shared weights - last distributed weights).
+                     more discriminative (?), matches the paper's Δθ framing
+            'weights': similarity computed on the raw shared weights.
         """
         assert (len(self.uploaded_models) > 0)
 
@@ -168,8 +162,7 @@ class Server():
 
             self.client_models[target_id] = client_model
     def send_cos_sim_aggreagted_SSP(self):
-        """Send each client its own personalized model and update the reference
-        used for next round's update delta."""
+        """Send each client its own model and update the reference used for next round's update delta."""
         assert (len(self.clients) > 0)
         for client in self.clients:
             pmodel = self.client_models[client.id]

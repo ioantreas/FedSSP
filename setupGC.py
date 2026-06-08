@@ -49,7 +49,13 @@ def prepareData_multiDS(args, datapath, group='chem', batchSize=128, seed=None):
         datasets = ["MUTAG", "BZR", "COX2", "DHFR", "PTC_MR", "AIDS", "NCI1", "IMDB-MULTI", "IMDB-BINARY", "Letter-high", "Letter-med", "Letter-low"]
     elif group == 'chemcv':
         datasets = ["MUTAG", "BZR", "COX2", "DHFR", "PTC_MR", "AIDS", "NCI1", "Letter-high", "Letter-med", "Letter-low"]
-
+    elif group == 'skewed':
+        datasets = ["MUTAG", "BZR", "COX2", "DHFR",
+                    "PTC_MR", "PTC_FM", "PTC_FR", "PTC_MM",
+                    "AIDS", "NCI1",  # 10 small-molecule clients
+                    "PROTEINS",  # 1 bioinformatics
+                    "IMDB-BINARY",  # 1 social network
+                    "Letter-low"]  # 1 computer vision
 
     splitedData = {}
     df = pd.DataFrame()
