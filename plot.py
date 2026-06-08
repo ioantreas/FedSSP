@@ -7,15 +7,23 @@ import matplotlib.pyplot as plt
 
 parser = argparse.ArgumentParser()
 parser.add_argument("root", type=str)
+parser.add_argument("alg", type=str)
+
 args = parser.parse_args()
 
 root = args.root
+alg = args.alg
 
 
 def process_folder(folder_path, plot_dir):
 
     csv_files = sorted(
-        glob.glob(os.path.join(folder_path, "*metrics*.csv"))
+        glob.glob(
+            os.path.join(
+                folder_path,
+                f"*metrics_{alg}*.csv"
+            )
+        )
     )
 
     if len(csv_files) == 0:
@@ -26,8 +34,15 @@ def process_folder(folder_path, plot_dir):
 
     rounds = dfs[0]["round"].values
 
-    accs = np.stack([df["mean_acc"].values for df in dfs])
-    times = np.stack([df["total_time"].values for df in dfs])
+    accs = np.stack([
+        df["mean_acc"].values
+        for df in dfs
+    ])
+
+    times = np.stack([
+        df["total_time"].values
+        for df in dfs
+    ])
 
     mean_acc = accs.mean(axis=0)
     std_acc = accs.std(axis=0)
@@ -39,7 +54,7 @@ def process_folder(folder_path, plot_dir):
     # --------------------------------
     # Accuracy vs Round
     # --------------------------------
-    plt.figure(figsize=(7,5))
+    plt.figure(figsize=(7, 5))
 
     plt.plot(rounds, mean_acc)
 
@@ -52,11 +67,14 @@ def process_folder(folder_path, plot_dir):
 
     plt.xlabel("Communication Round")
     plt.ylabel("Accuracy")
-    plt.title("Accuracy vs Round")
+    plt.title(os.path.basename(folder_path))
     plt.grid(True)
 
     plt.savefig(
-        os.path.join(plot_dir, "accuracy_vs_round.png"),
+        os.path.join(
+            plot_dir,
+            "accuracy_vs_round.png"
+        ),
         bbox_inches="tight"
     )
 
@@ -65,7 +83,7 @@ def process_folder(folder_path, plot_dir):
     # --------------------------------
     # Accuracy vs Time
     # --------------------------------
-    plt.figure(figsize=(7,5))
+    plt.figure(figsize=(7, 5))
 
     plt.plot(mean_time, mean_acc)
 
@@ -78,11 +96,14 @@ def process_folder(folder_path, plot_dir):
 
     plt.xlabel("Wall-clock Time (s)")
     plt.ylabel("Accuracy")
-    plt.title("Accuracy vs Time")
+    plt.title(os.path.basename(folder_path))
     plt.grid(True)
 
     plt.savefig(
-        os.path.join(plot_dir, "accuracy_vs_time.png"),
+        os.path.join(
+            plot_dir,
+            "accuracy_vs_time.png"
+        ),
         bbox_inches="tight"
     )
 
@@ -91,23 +112,26 @@ def process_folder(folder_path, plot_dir):
     print(f"Saved plots to: {plot_dir}")
 
 
-# ----------------------------------------
-# Iterate experiments
-# ----------------------------------------
-for experiment in os.listdir(root):
+for dataset in sorted(os.listdir(root)):
 
-    experiment_path = os.path.join(root, experiment)
+    dataset_path = os.path.join(
+        root,
+        dataset
+    )
 
-    if not os.path.isdir(experiment_path):
+    if not os.path.isdir(dataset_path):
+        continue
+
+    if dataset == "plots":
         continue
 
     plot_dir = os.path.join(
+        root,
         "plots",
-        os.path.basename(root),
-        experiment
+        dataset
     )
 
     process_folder(
-        experiment_path,
+        dataset_path,
         plot_dir
     )
