@@ -145,26 +145,34 @@ class SSP(nn.Module):
         self.decoder = nn.Linear(hidden_dim, nheads)  
         self.convs = nn.ModuleList([Conv(hidden_dim, feat_dropout) for _ in range(nlayer)])
         self.pool = AvgPooling()  
-        self.fc = nn.Linear(hidden_dim, nclass)  
+        self.fc = nn.Linear(hidden_dim, nclass)
 
-    def forward(self, e, u, g, length, x):
+    def forward(self, e, u, g, length, x, masks=None):
         ut = u.transpose(1, 2)
 
-        e_mask, edge_idx, edge_real = self.length_to_mask(length, g)
+        if masks is None:
+            raise Exception("Masks not provided, computing masks from lengths...")
+            e_mask, edge_idx, edge_real = self.length_to_mask(length, g)
+        else:
+            e_mask, edge_idx, edge_real = masks
 
-        x = self.atom_encoder(x)  
+        x = self.atom_encoder(x)
+
         eig = self.eig_encoder_s(e)
 
-        mha_eig = self.mha_norm(eig)  
-        mha_eig, attn = self.mha(mha_eig, mha_eig, mha_eig, key_padding_mask=e_mask)  
-        eig = eig + self.mha_dropout(mha_eig)  
+        mha_eig = self.mha_norm(eig)
+        mha_eig, attn = self.mha(
+            mha_eig, mha_eig, mha_eig,
+            key_padding_mask=e_mask
+        )
+        eig = eig + self.mha_dropout(mha_eig)
 
-        ffn_eig = self.ffn_norm(eig)  
-        ffn_eig = self.ffn(ffn_eig)  
-        eig = eig + self.ffn_dropout(ffn_eig)  
+        ffn_eig = self.ffn_norm(eig)
+        ffn_eig = self.ffn(ffn_eig)
+        eig = eig + self.ffn_dropout(ffn_eig)
 
-        new_e = self.decoder(eig).transpose(2, 1)  
-        diag_e = torch.diag_embed(new_e)  
+        new_e = self.decoder(eig).transpose(2, 1)
+        diag_e = torch.diag_embed(new_e)
 
         identity = torch.diag_embed(torch.ones_like(e))
         bases = [identity]
@@ -173,15 +181,18 @@ class SSP(nn.Module):
             bases.append(filters)
 
         bases = torch.stack(bases, axis=-1)
+
         bases = bases[edge_real]
+
         bases = self.adj_dropout(self.filter_encoder_s(bases))
+
         bases = edge_softmax(g, bases)
 
-        for conv in self.convs:
-            x = conv(g, x, bases)  
+        for layer_idx, conv in enumerate(self.convs):
+            x = conv(g, x, bases)
 
-        h = self.pool(g, x)  
-        h = self.fc(h)  
+        h = self.pool(g, x)
+        h = self.fc(h)
 
         return h
 
@@ -235,8 +246,8 @@ class Split_model(nn.Module):
         self.base = base
         self.head = head
 
-    def forward(self, e, u, g, length, x):
-        feature = self.base(e, u, g, length, x)
+    def forward(self, e, u, g, length, x, masks=None):
+        feature = self.base(e, u, g, length, x, masks=masks)
         out = self.head(feature)
 
         return feature, out

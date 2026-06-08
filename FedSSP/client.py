@@ -141,7 +141,7 @@ def train_gc_SSP(client, model, dataloaders, local_epoch, device, train_preproce
             client.current_mean.zero_()
             client.num_batches_tracked.zero_()
         for batch in train_preprocessed_batches:
-            e, u, g, length, label, _ = batch
+            e, u, g, length, label, _, masks = batch
             optimizer = torch.optim.AdamW(model.parameters(), lr=0.001, betas=(0.9, 0.999), eps=1e-8,
                                           weight_decay=5e-4)
             optimizer.zero_grad()
@@ -149,7 +149,7 @@ def train_gc_SSP(client, model, dataloaders, local_epoch, device, train_preproce
                 client.current_mean.zero_()
                 client.num_batches_tracked.zero_()
             x = g.ndata['feat']
-            rep, pred = model(e, u, g, length, x)
+            rep, pred = model(e, u, g, length, x, masks=masks)
             current_mean = torch.mean(rep, dim=0).to(device)
             client.current_mean = client.current_mean.to(device)
             client.local_consensus = client.local_consensus.to(device)
@@ -278,7 +278,7 @@ class clientAvgSSP(Client_GC):
                 optimizer = torch.optim.AdamW(model.parameters(), lr=0.001, betas=(0.9, 0.999), eps=1e-8,
                                               weight_decay=5e-4)
                 optimizer.zero_grad()
-                if client.args.mean_mode == 'official':
+                if client.args.mean_mode == 'none':
                     client.current_mean.zero_()
                     client.num_batches_tracked.zero_()
                 x = g.ndata['feat']
@@ -333,11 +333,11 @@ def eval_gc_test_SSP(model, device, client):
     ngraphs = 0
     test_preprocessed_batches = client.test_preprocessed_batches
     for batch in test_preprocessed_batches:
-        e, u, g, length, label, num_graphs = batch
+        e, u, g, length, label, num_graphs, masks = batch
         x = g.ndata['feat']
         e, u, g, length, label = e.to(device), u.to(device), g.to(device), length.to(device), label.to(device)
         with torch.no_grad():
-            _, pred = client.model(e, u, g, length, x)
+            _, pred = client.model(e, u, g, length, x, masks=masks)
             acc_sum += pred.max(dim=1)[1].eq(label).sum().item()
             loss = model.loss(pred, label)
         total_loss += loss.item() * num_graphs
@@ -353,12 +353,12 @@ def eval_gc_val_SSP(model, device, client):
     ngraphs = 0
     val_preprocessed_batches = client.val_preprocessed_batches
     for batch in val_preprocessed_batches:
-        e, u, g, length, label, num_graphs = batch
+        e, u, g, length, label, num_graphs, masks = batch
         x= g.ndata['feat']
         e, u, g, length, label, x = e.to(device), u.to(device), g.to(device), length.to(device), label.to(
             device), x.to(device)
         with torch.no_grad():
-            rep, pred = client.model(e, u, g, length, x)
+            rep, pred = client.model(e, u, g, length, x, masks=masks)
             pred1 = torch.softmax(pred, dim=1)
             pred_labels = torch.argmax(pred1, dim=1)
             correct_predictions = pred_labels.eq(label).sum().item()

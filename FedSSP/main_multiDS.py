@@ -1,4 +1,3 @@
-import os
 import argparse
 import random
 import copy
@@ -51,7 +50,7 @@ if __name__ == '__main__':
                         help='Batch size for node classification.')
     parser.add_argument('--seed', help='seed for randomness;',
                         type=int, default=1)
-    parser.add_argument('--datapath', type=str, default='./Data1',
+    parser.add_argument('--datapath', type=str, default='../Data1',
                         help='The input path of data.')
     parser.add_argument('--outbase', type=str, default='./outputs',
                         help='The base path for outputting.')
