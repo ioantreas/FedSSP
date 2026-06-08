@@ -33,7 +33,7 @@ def _randChunk(graphs, num_client, overlap, seed=None):
     return graphs_chunks
 
 def prepareData_multiDS(args, datapath, group='chem', batchSize=128, seed=None):
-    assert group in ['chem', "biochem", 'biochemsn', "biosncv", "chemsn", "chemsncv", "chemcv"]
+    assert group in ['chem', "biochem", 'biochemsn', "biosncv", "chemsn", "chemsncv", "chemcv", "skewed"]
 
     if group == 'chem':
         datasets = ["MUTAG", "BZR", "COX2", "DHFR", "PTC_MR", "AIDS", "NCI1"]
