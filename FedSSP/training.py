@@ -6,13 +6,23 @@ import torch
 import time
 import numpy as np
 
-def proscess_loader(loader, device):
+def proscess_loader(loader, device, model_for_masks):
     preprocessed_batches = []
     for batch in loader:
         batch.to(device)
         e, u, g, length, valid_indices = collate_pyg_to_dgl(batch)
+
+        e = e.to(device)
+        u = u.to(device)
+        g = g.to(device)
+        length = length.to(device)
         valid_labels = batch.y[valid_indices].to(device)
-        preprocessed_batches.append((e.to(device), u.to(device), g.to(device), length.to(device), valid_labels, len(valid_indices)))
+
+        # precompute masks once
+        with torch.no_grad():
+            e_mask, edge_idx, edge_real = model_for_masks.base.length_to_mask(length, g)
+
+        preprocessed_batches.append((e, u, g, length, valid_labels, len(valid_indices), (e_mask, edge_idx, edge_real)))
     return preprocessed_batches
 
 def run_fedSSP(args, clients, server, COMMUNICATION_ROUNDS, local_epoch, samp=None, frac=1.0, summary_writer=None):
@@ -24,9 +34,9 @@ def run_fedSSP(args, clients, server, COMMUNICATION_ROUNDS, local_epoch, samp=No
     for client in clients:
         dataloaders = client.dataLoader
         train_loader, val_loader, test_loader = dataloaders['train'], dataloaders['val'], dataloaders['test']
-        client.train_preprocessed_batches = proscess_loader(train_loader, device)
-        client.test_preprocessed_batches = proscess_loader(test_loader, device)
-        client.val_preprocessed_batches = proscess_loader(val_loader, device)
+        client.train_preprocessed_batches = proscess_loader(train_loader, device, client.model)
+        client.test_preprocessed_batches = proscess_loader(test_loader, device, client.model)
+        client.val_preprocessed_batches = proscess_loader(val_loader, device, client.model)
         server.clients = clients
         server.selected_clients = clients
         client.train_samples = len(train_loader)

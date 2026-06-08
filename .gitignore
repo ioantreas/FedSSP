@@ -6,3 +6,5 @@ Data*
 outputs
 *.pyc
 **/__pycache__/
+FedSSP/outputs/raw/plots
+*/outputs
