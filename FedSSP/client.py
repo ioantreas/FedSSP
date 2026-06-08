@@ -278,7 +278,7 @@ class clientAvgSSP(Client_GC):
                 optimizer = torch.optim.AdamW(model.parameters(), lr=0.001, betas=(0.9, 0.999), eps=1e-8,
                                               weight_decay=5e-4)
                 optimizer.zero_grad()
-                if client.args.mean_mode == 'official':
+                if client.args.mean_mode == 'none':
                     client.current_mean.zero_()
                     client.num_batches_tracked.zero_()
                 x = g.ndata['feat']
