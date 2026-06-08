@@ -101,7 +101,7 @@ class Server():
         for client in clients:
             self.distributed[client.id] = self._flatten_shared(client.model.base)
 
-    def aggregate_cos_sim_based_SSP(self, temperature=0.5, sim_source='delta'):
+    def aggregate_cos_sim_based_SSP(self, temperature=0.5, sim_source='weights'):
         """Build one client model per client.
 
         For each pair of clients we measure how similar their spectral-encoder
