@@ -40,26 +40,26 @@ echo "=============================="
 echo " CUDA CHECK"
 echo "=============================="
 
-python - <<EOF
-import torch
-import torch_geometric
+#python - <<EOF
+#import torch
+#import torch_geometric
 
-print(torch.__version__)
-print(torch.cuda.is_available())
-print(torch_geometric.__version__)
-EOF
+#print(torch.__version__)
+#print(torch.cuda.is_available())
+#print(torch_geometric.__version__)
+#EOF
 
-python - <<EOF
-import torch
-if torch.cuda.is_available():
-    print("GPU:", torch.cuda.get_device_name(0))
-    x = torch.rand(1000,1000).cuda()
-    y = torch.mm(x, x)
-    print("CUDA tensor test successful")
-else:
-    raise RuntimeError("CUDA NOT AVAILABLE")
-EOF
-
+#python - <<EOF
+#import torch
+#if torch.cuda.is_available():
+#    print("GPU:", torch.cuda.get_device_name(0))
+#    x = torch.rand(1000,1000).cuda()
+#    y = torch.mm(x, x)
+#    print("CUDA tensor test successful")
+#else:
+#    raise RuntimeError("CUDA NOT AVAILABLE")
+#EOF
+echo "Skipping CUDA Check"
 # -----------------------------
 # Run experiment
 # -----------------------------
@@ -67,34 +67,34 @@ echo "=============================="
 echo " START TRAINING"
 echo "=============================="
 
-for seed in 7 8
+for seed in 1 2
 do
     echo "=============================="
     echo " RUNNING SEED $seed"
     echo "=============================="
 
-    srun python main_multiDS.py \
+    srun python FedSSP/main_multiDS.py \
         --alg fedSSP \
-        --data_group biosncv \
+        --data_group big \
         --spectral_mode full \
         --seed $seed \
         --repeat $seed
-    srun python main_multiDS.py \
+    srun python FedSSP/main_multiDS.py \
         --alg fedSSP \
-        --data_group biosncv \
+        --data_group big \
         --spectral_mode identity \
         --seed $seed \
         --repeat $seed
-    srun python main_multiDS.py \
+    srun python FedSSP/main_multiDS.py \
         --alg fedSSP \
-        --data_group biosncv \
+        --data_group big \
         --spectral_mode topk \
-        --spectral_k 4
+        --spectral_k 4 \
         --seed $seed \
         --repeat $seed
-    srun python main_multiDS.py \
+    srun python FedSSP/main_multiDS.py \
         --alg fedSSP \
-        --data_group biosncv \
+        --data_group big \
         --spectral_mode chebyshev \
         --seed $seed \
         --repeat $seed

@@ -105,7 +105,7 @@ if __name__ == '__main__':
 
     outpath = os.path.join(args.outbase, 'raw', args.data_group, args.spectral_mode if 'fedSSP' in args.alg else "other")
     Path(outpath).mkdir(parents=True, exist_ok=True)
-    # print(f"Current path: {os.path.curdir}, dataset path: {args.datapath}, full dataset path: {os.path.realpath(os.path.join(os.path.curdir, args.datapath))}")
+    print(f"Current path: {os.path.curdir}, dataset path: {args.datapath}, full dataset path: {os.path.realpath(os.path.join(os.path.curdir, args.datapath))}")
     print("Preparing data ...")
     splitedData, df_stats = setupGC.prepareData_multiDS(args, args.datapath, args.data_group, args.batch_size, seed=seed_dataSplit)
     print("Done")
