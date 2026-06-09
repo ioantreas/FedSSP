@@ -57,7 +57,7 @@ def prepareData_multiDS(args, datapath, group='chem', batchSize=128, seed=None):
                     "IMDB-BINARY",  # 1 social network
                     "Letter-low"]  # 1 computer vision
     elif group == "big":
-        datasets = ["SYNTHETICnew", "SYNTHIE", "SYNTHETIC"]
+        datasets = ["SYNTHETICnew", "Synthie", "SYNTHETIC"]
     elif group == "bigger":
         datasets = ["DD", "REDDIT-BINARY", "FIRSTMM_DB"]
     splitedData = {}
