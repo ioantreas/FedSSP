@@ -1,4 +1,3 @@
-import os
 import argparse
 import random
 import copy
@@ -60,14 +59,14 @@ if __name__ == '__main__':
                         help='Batch size for node classification.')
     parser.add_argument('--seed', help='seed for randomness;',
                         type=int, default=1)
-    parser.add_argument('--datapath', type=str, default='./Data1',
+    parser.add_argument('--datapath', type=str, default='../Data1',
                         help='The input path of data.')
     parser.add_argument('--outbase', type=str, default='./outputs',
                         help='The base path for outputting.')
     parser.add_argument('--repeat', help='index of repeating;',
                         type=int, default=None)
     parser.add_argument('--data_group', help='specify the group of datasets',
-                        type=str, default='chem', choices=['chem', "biochem", 'biochemsn', "biosncv", "chemsn", "chemsncv", "chemcv"])
+                        type=str, default='chem', choices=['chem', "biochem", 'biochemsn', "biosncv", "chemsn", "chemsncv", "chemcv", "skewed"])
     parser.add_argument('--seq_length', help='the length of the gradient norm sequence',
                         type=int, default=5)
     parser.add_argument('--n_rw', type=int, default=16,

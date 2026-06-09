@@ -6,6 +6,8 @@ Data*
 outputs
 *.pyc
 **/__pycache__/
+FedSSP/outputs/raw/plots
+*/outputs
 .venv
 slurm-*
 submit.sh
