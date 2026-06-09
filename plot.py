@@ -30,7 +30,16 @@ def process_folder(folder_path, plot_dir):
         print(f"No CSV files in {folder_path}")
         return
 
-    dfs = [pd.read_csv(f) for f in csv_files]
+    dfs = []
+
+    for f in csv_files:
+        try:
+            dfs.append(pd.read_csv(f))
+        except Exception:
+            pass
+
+    if len(dfs) == 0:
+        return
 
     rounds = dfs[0]["round"].values
 
@@ -49,26 +58,37 @@ def process_folder(folder_path, plot_dir):
 
     mean_time = times.mean(axis=0)
 
-    os.makedirs(plot_dir, exist_ok=True)
+    os.makedirs(
+        plot_dir,
+        exist_ok=True
+    )
 
-    # --------------------------------
+    # --------------------------------------------------
     # Accuracy vs Round
-    # --------------------------------
+    # --------------------------------------------------
     plt.figure(figsize=(7, 5))
 
-    plt.plot(rounds, mean_acc)
+    plt.plot(
+        rounds,
+        mean_acc,
+        label="Mean Accuracy"
+    )
 
     plt.fill_between(
         rounds,
         mean_acc - std_acc,
         mean_acc + std_acc,
-        alpha=0.3
+        alpha=0.3,
+        label="±1 std"
     )
 
     plt.xlabel("Communication Round")
     plt.ylabel("Accuracy")
-    plt.title(os.path.basename(folder_path))
+    plt.title(
+        f"{os.path.basename(folder_path)} ({alg})"
+    )
     plt.grid(True)
+    plt.legend()
 
     plt.savefig(
         os.path.join(
@@ -80,24 +100,32 @@ def process_folder(folder_path, plot_dir):
 
     plt.close()
 
-    # --------------------------------
+    # --------------------------------------------------
     # Accuracy vs Time
-    # --------------------------------
+    # --------------------------------------------------
     plt.figure(figsize=(7, 5))
 
-    plt.plot(mean_time, mean_acc)
+    plt.plot(
+        mean_time,
+        mean_acc,
+        label="Mean Accuracy"
+    )
 
     plt.fill_between(
         mean_time,
         mean_acc - std_acc,
         mean_acc + std_acc,
-        alpha=0.3
+        alpha=0.3,
+        label="±1 std"
     )
 
     plt.xlabel("Wall-clock Time (s)")
     plt.ylabel("Accuracy")
-    plt.title(os.path.basename(folder_path))
+    plt.title(
+        f"{os.path.basename(folder_path)} ({alg})"
+    )
     plt.grid(True)
+    plt.legend()
 
     plt.savefig(
         os.path.join(
@@ -109,7 +137,9 @@ def process_folder(folder_path, plot_dir):
 
     plt.close()
 
-    print(f"Saved plots to: {plot_dir}")
+    print(
+        f"Saved plots to: {plot_dir}"
+    )
 
 
 for dataset in sorted(os.listdir(root)):
