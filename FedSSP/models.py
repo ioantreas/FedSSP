@@ -17,6 +17,8 @@ class AtomEncoder(torch.nn.Module):
         self.activation = nn.ReLU()
 
     def forward(self, x):
+        if x.dim() == 1:
+            x = x.unsqueeze(-1)
         x = self.linear(x)
         x = self.activation(x)
         return x
@@ -92,7 +94,10 @@ class Conv(nn.Module):
         )
 
     def forward(self, graph, x_feat, bases):
-        hidden_size = x_feat.size(1)
+        if x_feat.dim() == 1:
+            x_feat = x_feat.unsqueeze(-1)
+
+        hidden_size = x_feat.size(-1)
 
         edge_attr = torch.zeros(graph.number_of_edges(), hidden_size, device=graph.device)
         with graph.local_scope():

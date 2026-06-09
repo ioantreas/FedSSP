@@ -137,7 +137,10 @@ def collate_pyg_to_dgl(batch, spectral_mode='full', spectral_k=None):
         num_nodes = data.num_nodes if data.x is not None else (edge_index.max().item() + 1)
         g = dgl.graph((edge_index[0], edge_index[1]), num_nodes=num_nodes)
         if data.x is not None:
-            g.ndata['feat'] = data.x.cpu()
+            feat = data.x.cpu()
+            if feat.dim() == 1:
+                feat = feat.unsqueeze(-1)
+            g.ndata['feat'] = feat
         graphs.append(g)
 
     g = dgl.batch(graphs)

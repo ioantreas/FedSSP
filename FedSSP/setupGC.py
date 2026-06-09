@@ -141,8 +141,12 @@ def setup_devices_SSP(splitedData, args):
         dataloaders, num_node_features, num_graph_labels, train_size = splitedData[ds]
         first_batch = next(iter(dataloaders['train']))
 
+        node_feature_dim = [0]
+
         if first_batch.x is not None:
-            node_feature_dim = first_batch.x.size(1)
+            node_feature_dim = first_batch.x.size(-1)
+            if first_batch.x.dim() == 1:
+                node_feature_dim = 1
             node_feature_dim = [node_feature_dim]
 
         edge_feature_dim = 0
