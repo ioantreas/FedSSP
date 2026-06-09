@@ -31,6 +31,14 @@ def run_fedSSP(args, clients, server, COMMUNICATION_ROUNDS, local_epoch, samp=No
         sampling_fn = server.randomSample_clients
         frac = 1.0
 
+    preprocessed_batches_path = os.path.join(
+                args.outbase,
+                "preprocessed_batches",
+                args.data_group,
+                args.spectral_mode if 'fedSSP' in args.alg else "other",
+                f"{args.repeat}_metrics_{args.alg}_{args.type_init}.csv"
+            )
+
     preprocessing_start_time = time.time()
     for client in clients:
         dataloaders = client.dataLoader

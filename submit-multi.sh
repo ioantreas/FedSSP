@@ -103,4 +103,3 @@ done
 echo "=============================="
 echo " JOB FINISHED"
 echo "=============================="
-[aioannou@login03 batch_jobs]$
