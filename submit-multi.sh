@@ -67,7 +67,7 @@ echo "=============================="
 echo " START TRAINING"
 echo "=============================="
 
-for seed in 4 5 6 7 8
+for seed in 7 8
 do
     echo "=============================="
     echo " RUNNING SEED $seed"
@@ -76,8 +76,26 @@ do
     srun python main_multiDS.py \
         --alg fedSSP \
         --data_group biosncv \
+        --spectral_mode full \
+        --seed $seed \
+        --repeat $seed
+    srun python main_multiDS.py \
+        --alg fedSSP \
+        --data_group biosncv \
+        --spectral_mode identity \
+        --seed $seed \
+        --repeat $seed
+    srun python main_multiDS.py \
+        --alg fedSSP \
+        --data_group biosncv \
         --spectral_mode topk \
-        --spectral_k 4 \
+        --spectral_k 4
+        --seed $seed \
+        --repeat $seed
+    srun python main_multiDS.py \
+        --alg fedSSP \
+        --data_group biosncv \
+        --spectral_mode chebyshev \
         --seed $seed \
         --repeat $seed
 done
