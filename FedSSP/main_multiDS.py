@@ -66,7 +66,7 @@ if __name__ == '__main__':
     parser.add_argument('--repeat', help='index of repeating;',
                         type=int, default=None)
     parser.add_argument('--data_group', help='specify the group of datasets',
-                        type=str, default='chem', choices=['chem', "biochem", 'biochemsn', "biosncv", "chemsn", "chemsncv", "chemcv", "skewed"])
+                        type=str, default='chem', choices=['chem', "biochem", 'biochemsn', "biosncv", "chemsn", "chemsncv", "chemcv", "skewed", "big", "bigger"])
     parser.add_argument('--seq_length', help='the length of the gradient norm sequence',
                         type=int, default=5)
     parser.add_argument('--n_rw', type=int, default=16,

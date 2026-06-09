@@ -33,7 +33,7 @@ def _randChunk(graphs, num_client, overlap, seed=None):
     return graphs_chunks
 
 def prepareData_multiDS(args, datapath, group='chem', batchSize=128, seed=None):
-    assert group in ['chem', "biochem", 'biochemsn', "biosncv", "chemsn", "chemsncv", "chemcv", "skewed"]
+    assert group in ['chem', "biochem", 'biochemsn', "biosncv", "chemsn", "chemsncv", "chemcv", "skewed", "big", "bigger"]
 
     if group == 'chem':
         datasets = ["MUTAG", "BZR", "COX2", "DHFR", "PTC_MR", "AIDS", "NCI1"]
@@ -56,6 +56,10 @@ def prepareData_multiDS(args, datapath, group='chem', batchSize=128, seed=None):
                     "PROTEINS",  # 1 bioinformatics
                     "IMDB-BINARY",  # 1 social network
                     "Letter-low"]  # 1 computer vision
+    elif group == "big":
+        datasets = ["SYNTHETICnew", "SYNTHIE", "SYNTHETIC"]
+    elif group == "bigger":
+        datasets = ["DD", "REDDIT-BINARY", "FIRSTMM_DB"]
 
     splitedData = {}
     df = pd.DataFrame()

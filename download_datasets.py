@@ -8,6 +8,8 @@ datasets = [
     "Peking_1", "OHSU", "PROTEINS",
     "IMDB-MULTI", "IMDB-BINARY",
     "Letter-high", "Letter-med", "Letter-low",
+    "SYNTHETICnew", "SYNTHIE", "SYNTHETIC", 
+    "DD", "REDDIT-BINARY", "FIRSTMM_DB"
 ]
 
 for name in datasets:

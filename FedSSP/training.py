@@ -43,6 +43,7 @@ def run_fedSSP(args, clients, server, COMMUNICATION_ROUNDS, local_epoch, samp=No
         server.selected_clients = clients
         client.train_samples = len(train_loader)
     preprocessing_duration = time.time() - preprocessing_start_time
+    print(f" Preprocessing duration: {preprocessing_duration}")
 
     start_time = time.time()
     round_times = []
