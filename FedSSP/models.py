@@ -19,6 +19,8 @@ class AtomEncoder(torch.nn.Module):
     def forward(self, x):
         if x.dim() == 1:
             x = x.unsqueeze(-1)
+        if x.size(-1) == 0:
+            x = torch.ones((x.size(0), 1), dtype=x.dtype, device=x.device)
         x = self.linear(x)
         x = self.activation(x)
         return x
@@ -96,6 +98,8 @@ class Conv(nn.Module):
     def forward(self, graph, x_feat, bases):
         if x_feat.dim() == 1:
             x_feat = x_feat.unsqueeze(-1)
+        if x_feat.size(-1) == 0:
+            x_feat = torch.ones((x_feat.size(0), 1), dtype=x_feat.dtype, device=x_feat.device)
 
         hidden_size = x_feat.size(-1)
 

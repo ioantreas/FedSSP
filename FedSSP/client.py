@@ -140,6 +140,8 @@ def collate_pyg_to_dgl(batch, spectral_mode='full', spectral_k=None):
             feat = data.x.cpu()
             if feat.dim() == 1:
                 feat = feat.unsqueeze(-1)
+            if feat.size(-1) == 0:
+                feat = torch.ones((num_nodes, 1), dtype=torch.float32)
             g.ndata['feat'] = feat
         graphs.append(g)
 

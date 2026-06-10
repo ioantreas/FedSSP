@@ -87,6 +87,8 @@ def prepareData_multiDS(args, datapath, group='chem', batchSize=128, seed=None):
         dataloader_test = DataLoader(graphs_test, batch_size=batchSize, shuffle=True)
 
         num_node_features = graphs[0].num_node_features
+        if num_node_features == 0:
+            num_node_features = 1
         num_graph_labels = get_numGraphLabels(graphs_train)
 
         splitedData[data] = ({'train': dataloader_train, 'val': dataloader_val, 'test': dataloader_test},
@@ -145,7 +147,7 @@ def setup_devices_SSP(splitedData, args):
 
         if first_batch.x is not None:
             node_feature_dim = first_batch.x.size(-1)
-            if first_batch.x.dim() == 1:
+            if first_batch.x.dim() == 1 or node_feature_dim == 0:
                 node_feature_dim = 1
             node_feature_dim = [node_feature_dim]
 
