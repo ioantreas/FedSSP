@@ -38,7 +38,47 @@ def get_maxDegree(graphs):
 
 def split_data(graphs, train=None, test=None, shuffle=True, seed=None):
     y = torch.cat([graph.y for graph in graphs])
-    graphs_tv, graphs_test = train_test_split(graphs, train_size=train, test_size=test, stratify=y, shuffle=shuffle, random_state=seed)
+    n_samples = len(graphs)
+    n_classes = int(torch.unique(y).numel())
+
+    def _as_count(value):
+        if value is None:
+            return None
+        if isinstance(value, float):
+            return int(round(value * n_samples))
+        return int(value)
+
+    train_count = _as_count(train)
+    test_count = _as_count(test)
+
+    can_stratify = True
+    if test_count is not None and test_count < n_classes:
+        can_stratify = False
+    if train_count is not None and train_count < n_classes:
+        can_stratify = False
+
+    if can_stratify:
+        try:
+            graphs_tv, graphs_test = train_test_split(
+                graphs,
+                train_size=train,
+                test_size=test,
+                stratify=y,
+                shuffle=shuffle,
+                random_state=seed,
+            )
+            return graphs_tv, graphs_test
+        except ValueError:
+            # Fall back to an unstratified split when the label distribution is too sparse.
+            pass
+
+    graphs_tv, graphs_test = train_test_split(
+        graphs,
+        train_size=train,
+        test_size=test,
+        shuffle=shuffle,
+        random_state=seed,
+    )
     return graphs_tv, graphs_test
 
 
