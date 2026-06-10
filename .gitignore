@@ -10,3 +10,4 @@ FedSSP/outputs/raw/plots
 */outputs
 .venv
 slurm-*
+results_*

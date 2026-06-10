@@ -103,8 +103,10 @@ def main():
     #plt.show()
     plt.xlabel("Round")
     plt.ylabel("Accuracy")
+    plt.savefig("results_full")
     plt.xlim(10, 200)
-    plt.savefig("results")
+    plt.ylim(0.65, 0.8)
+    plt.savefig("results_cropped")
 
 if __name__ == "__main__":
     main()

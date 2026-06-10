@@ -16,6 +16,7 @@ def proscess_loader(loader, device, model_for_masks, spectral_mode='full', spect
         u = u.to(device)
         g = g.to(device)
         length = length.to(device)
+        print(f"Eigenvectors length: {len(e)}, {e}")
         valid_labels = batch.y[valid_indices].to(device)
 
         # precompute masks once
