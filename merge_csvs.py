@@ -2,12 +2,14 @@ import csv
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
+from scipy import stats
 
 DATASET="big"
 SPEPCTRAL_MODES=["full","identity","topk","chebyshev"]
 NUM_RUNS=5
 
 def main():
+    last_accuracies_all_dict: dict[str, list[float]] = {}
     last_accuracies_dict = {}
     all_accuracies_dict = {}
     preprocessing_durations_dict = {}
@@ -74,6 +76,7 @@ def main():
         round_accs_per_mode[spectral_mode] = round_accs
         round_stds_per_mode[spectral_mode] = round_stds
 
+        last_accuracies_all_dict[spectral_mode] = last_accuracies
         last_accuracies_dict[f"{spectral_mode}_mean"] = np.mean(last_accuracies)
         last_accuracies_dict[f"{spectral_mode}_std"] = np.std(last_accuracies)
         all_accuracies_dict[f"{spectral_mode}_mean"] = np.mean(all_accuracies)
@@ -81,6 +84,12 @@ def main():
         preprocessing_durations_dict[f"{spectral_mode}_mean"] = np.mean(preprocessing_durations)
         preprocessing_durations_dict[f"{spectral_mode}_std"] = np.std(preprocessing_durations)
     #print(last_accuracies_dict)
+
+    kruskal_test = stats.kruskal(last_accuracies_all_dict["full"],
+                                 last_accuracies_all_dict["identity"],
+                                 last_accuracies_all_dict["topk"],
+                                 last_accuracies_all_dict["chebyshev"])
+    print(kruskal_test)
 
     path=f"outputs/raw/combined_{DATASET}.csv"
     with open(path, mode="w", newline='') as file:
