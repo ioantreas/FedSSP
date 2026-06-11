@@ -59,7 +59,7 @@ def prepareData_multiDS(args, datapath, group='chem', batchSize=128, seed=None):
     elif group == "big":
         datasets = ["SYNTHETICnew", "Synthie", "SYNTHETIC"]
     elif group == "bigger":
-        datasets = ["DD", "REDDIT-BINARY", "FIRSTMM_DB"]
+        datasets = ["DD", "REDDIT-BINARY"]
     splitedData = {}
     df = pd.DataFrame()
     for data in datasets:
