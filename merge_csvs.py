@@ -3,9 +3,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-DATASET="biosncv"
+DATASET="big"
 SPEPCTRAL_MODES=["full","identity","topk","chebyshev"]
-NUM_RUNS=8
+NUM_RUNS=5
 
 def main():
     last_accuracies_dict = {}
@@ -58,7 +58,7 @@ def main():
         
 
 
-        path=f"outputs/raw/combined_{spectral_mode}.csv"
+        path=f"outputs/raw/combined_{spectral_mode}_{DATASET}.csv"
         with open(path, mode="w", newline='') as file:
             csv_writer = csv.writer(file)
             csv_writer.writerow(["spectral_mode","round","acc-mean","acc-std"])
@@ -82,7 +82,7 @@ def main():
         preprocessing_durations_dict[f"{spectral_mode}_std"] = np.std(preprocessing_durations)
     #print(last_accuracies_dict)
 
-    path=f"outputs/raw/combined.csv"
+    path=f"outputs/raw/combined_{DATASET}.csv"
     with open(path, mode="w", newline='') as file:
         csv_writer = csv.writer(file)
         csv_writer.writerow(["spectral_mode","last_mean","last_std","all_mean","all_std","pre_mean","pre_std"])
@@ -103,10 +103,10 @@ def main():
     #plt.show()
     plt.xlabel("Round")
     plt.ylabel("Accuracy")
-    plt.savefig("results_full")
+    plt.savefig(f"results_full_{DATASET}")
     plt.xlim(10, 200)
     plt.ylim(0.65, 0.8)
-    plt.savefig("results_cropped")
+    plt.savefig(f"results_cropped_{DATASET}")
 
 if __name__ == "__main__":
     main()

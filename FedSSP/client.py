@@ -66,32 +66,58 @@ def _spectral_decomposition(adj, spectral_mode='full', spectral_k=None):
         return e, u
 
     if spectral_mode == 'chebyshev':
-        # Chebyshev mode avoids eigendecomposition by approximating the spectrum
-        # with polynomial diffusion features derived from the normalized Laplacian.
+        N = adj.size(0)
+        device = adj.device
+        dtype = adj.dtype
+
         eps = 1e-6
+
+        # degree vector
         deg = torch.sum(adj, dim=1)
         inv_sqrt_deg = torch.pow(deg + eps, -0.5)
-        inv_sqrt_deg = torch.diag(inv_sqrt_deg)
-        identity = torch.eye(N, dtype=adj.dtype, device=adj.device)
-        normalized_adj = inv_sqrt_deg @ adj @ inv_sqrt_deg
-        normalized_laplacian = identity - normalized_adj
 
-        # Normalized Laplacian has spectrum in [0, 2], so this maps it to roughly [-1, 1].
-        scaled_laplacian = normalized_laplacian - identity
+        # We do NOT form D^{-1/2} A D^{-1/2} explicitly as a dense matrix.
+        # Instead we keep adj sparse-dense multiplication structure.
+        adj_sparse = adj if adj.is_sparse else adj.to_sparse()
 
-        degree = spectral_k if spectral_k is not None else min(N, 8)
-        degree = max(1, degree)
+        identity = torch.eye(N, device=device, dtype=dtype)
 
-        cheb_terms = [identity]
-        if degree > 1:
-            cheb_terms.append(scaled_laplacian)
-        for _ in range(2, degree):
-            cheb_terms.append(2 * scaled_laplacian @ cheb_terms[-1] - cheb_terms[-2])
+        # normalized Laplacian action:
+        # L_norm x = x - D^{-1/2} A D^{-1/2} x
+        def laplacian_mv(x):
+            x = inv_sqrt_deg[:, None] * x
+            x = torch.sparse.mm(adj_sparse, x)
+            x = inv_sqrt_deg[:, None] * x
+            return x
 
-        cheb_stack = torch.stack(cheb_terms, dim=0)
-        cheb_summary = cheb_stack.mean(dim=0)
-        e = cheb_summary.diag().clone()
-        u = cheb_summary
+        # scaled Laplacian: L_tilde = L_norm - I
+        def scaled_laplacian_mv(x):
+            return laplacian_mv(x) - x
+
+        # polynomial degree
+        d = spectral_k if spectral_k is not None else min(N, 8)
+        d = max(1, d)
+
+        # input signal: identity basis (standard trick if no features)
+        X0 = identity
+        X1 = scaled_laplacian_mv(X0)
+
+        cheb_terms = [X0]
+
+        if d > 1:
+            cheb_terms.append(X1)
+
+        for _ in range(2, d):
+            X2 = 2 * scaled_laplacian_mv(cheb_terms[-1]) - cheb_terms[-2]
+            cheb_terms.append(X2)
+
+        # combine (uniform coefficients as in your original code)
+        cheb_out = sum(cheb_terms) / d
+
+        # return something compatible with your interface
+        e = cheb_out.diag().clone()
+        u = cheb_out
+
         return e, u
 
     raise ValueError(f"Unsupported spectral_mode: {spectral_mode}")
