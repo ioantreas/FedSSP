@@ -79,26 +79,7 @@ do
         srun python FedSSP/main_multiDS.py \
             --alg fedSSP \
             --data_group $dataset \
-            --spectral_mode full \
-            --seed $seed \
-            --repeat $seed
-        srun python FedSSP/main_multiDS.py \
-            --alg fedSSP \
-            --data_group $dataset \
             --spectral_mode identity \
-            --seed $seed \
-            --repeat $seed
-        srun python FedSSP/main_multiDS.py \
-            --alg fedSSP \
-            --data_group $dataset \
-            --spectral_mode topk \
-            --spectral_k 4 \
-            --seed $seed \
-            --repeat $seed
-        srun python FedSSP/main_multiDS.py \
-            --alg fedSSP \
-            --data_group $dataset \
-            --spectral_mode chebyshev \
             --seed $seed \
             --repeat $seed
     done
