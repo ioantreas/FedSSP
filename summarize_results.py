@@ -11,7 +11,7 @@ parser.add_argument("alg", type=str)
 args = parser.parse_args()
 
 root = args.root
-alg = args.alg
+alg = args.alg.lower()
 
 results = []
 
@@ -25,46 +25,88 @@ for dataset in sorted(os.listdir(root)):
     if dataset == "plots":
         continue
 
-    csv_files = glob.glob(
-        os.path.join(dataset_path, "*.csv")
+    # --------------------------------------------------
+    # Select files belonging to requested algorithm
+    # --------------------------------------------------
+    if alg == "fedssp":
+        accuracy_pattern = "*accuracy_fedSSP*.csv"
+        metrics_pattern = "*metrics_fedSSP*.csv"
+
+    elif alg == "fedstar":
+        accuracy_pattern = "*accuracy_fedstar*.csv"
+        metrics_pattern = "*metrics_fedstar*.csv"
+
+    elif alg == "selftrain":
+        accuracy_pattern = "*accuracy_selftrain*.csv"
+        metrics_pattern = None
+
+    else:
+        raise ValueError(
+            f"Unknown algorithm: {alg}"
+        )
+
+    accuracy_files = sorted(
+        glob.glob(
+            os.path.join(
+                dataset_path,
+                accuracy_pattern
+            )
+        )
     )
 
-    if len(csv_files) == 0:
+    if metrics_pattern is not None:
+        metrics_files = sorted(
+            glob.glob(
+                os.path.join(
+                    dataset_path,
+                    metrics_pattern
+                )
+            )
+        )
+    else:
+        metrics_files = []
+
+    if len(accuracy_files) == 0:
         print(f"Skipping {dataset}")
         continue
 
     final_accs = []
     final_times = []
 
-    for f in csv_files:
+    # --------------------------------------------------
+    # Accuracy
+    # --------------------------------------------------
+    for f in accuracy_files:
 
         try:
             df = pd.read_csv(f)
         except Exception:
             continue
 
-        # ----------------------------------
-        # SelfTrain
-        # ----------------------------------
-        if "test_acc" in df.columns:
+        if "test_acc" not in df.columns:
+            continue
 
-            run_acc = df["test_acc"].mean()
+        final_accs.append(
+            df["test_acc"].mean()
+        )
 
-            final_accs.append(run_acc)
+    # --------------------------------------------------
+    # Time
+    # --------------------------------------------------
+    for f in metrics_files:
 
-        # ----------------------------------
-        # FedSSP / FedStar
-        # ----------------------------------
-        elif "mean_acc" in df.columns:
+        try:
+            df = pd.read_csv(f)
+        except Exception:
+            continue
 
-            final_accs.append(
-                df["mean_acc"].iloc[-1]
+        if (
+                "total_time" in df.columns
+                and len(df) > 0
+        ):
+            final_times.append(
+                df["total_time"].iloc[-1]
             )
-
-            if "total_time" in df.columns:
-                final_times.append(
-                    df["total_time"].iloc[-1]
-                )
 
     if len(final_accs) == 0:
         continue
@@ -102,5 +144,11 @@ summary_df.to_csv(
     index=False
 )
 
+print("\n==============================")
+print(f"Algorithm: {alg}")
+print("==============================")
 print(summary_df)
-print(f"\nSaved summary to: {out_path}")
+
+print(
+    f"\nSaved summary to: {out_path}"
+)
