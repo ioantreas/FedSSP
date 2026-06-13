@@ -67,7 +67,7 @@ echo "=============================="
 echo " START TRAINING"
 echo "=============================="
 
-for seed in 3 4 5
+for seed in 1 2 3 4 5
 do
     echo "=============================="
     echo " RUNNING SEED $seed"

@@ -67,37 +67,41 @@ echo "=============================="
 echo " START TRAINING"
 echo "=============================="
 
-for seed in 3 4 5
+for seed in 1 2 3 4 5
 do
     echo "=============================="
     echo " RUNNING SEED $seed"
     echo "=============================="
 
-    srun python FedSSP/main_multiDS.py \
-        --alg fedSSP \
-        --data_group big \
-        --spectral_mode full \
-        --seed $seed \
-        --repeat $seed
-    srun python FedSSP/main_multiDS.py \
-        --alg fedSSP \
-        --data_group big \
-        --spectral_mode identity \
-        --seed $seed \
-        --repeat $seed
-    srun python FedSSP/main_multiDS.py \
-        --alg fedSSP \
-        --data_group big \
-        --spectral_mode topk \
-        --spectral_k 4 \
-        --seed $seed \
-        --repeat $seed
-    srun python FedSSP/main_multiDS.py \
-        --alg fedSSP \
-        --data_group big \
-        --spectral_mode chebyshev \
-        --seed $seed \
-        --repeat $seed
+    for dataset in "chem" "biochem" "chemcv" "biochemsn" "biosncv" "chemsncv"
+    do
+        echo " Running $dataset in $seed "
+        srun python FedSSP/main_multiDS.py \
+            --alg fedSSP \
+            --data_group $dataset \
+            --spectral_mode full \
+            --seed $seed \
+            --repeat $seed
+        srun python FedSSP/main_multiDS.py \
+            --alg fedSSP \
+            --data_group $dataset \
+            --spectral_mode identity \
+            --seed $seed \
+            --repeat $seed
+        srun python FedSSP/main_multiDS.py \
+            --alg fedSSP \
+            --data_group $dataset \
+            --spectral_mode topk \
+            --spectral_k 4 \
+            --seed $seed \
+            --repeat $seed
+        srun python FedSSP/main_multiDS.py \
+            --alg fedSSP \
+            --data_group $dataset \
+            --spectral_mode chebyshev \
+            --seed $seed \
+            --repeat $seed
+    done
 done
 
 echo "=============================="
