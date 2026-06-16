@@ -72,6 +72,16 @@ if __name__ == '__main__':
     parser.add_argument('-tau', "--tau_weight", type=float, default=100.0)
     parser.add_argument('-head', "--head", type=float, default=4)
     parser.add_argument('--mean_mode', type=str, default='none', choices=['none', 'batches', 'epochs', 'full'])
+    parser.add_argument(
+        "--disable_gsks_federation",
+        action="store_true",
+        help="Disable all cross-client GSKS sharing."
+    )
+    parser.add_argument(
+        "--disable_federation",
+        action="store_true",
+        help="Disable all cross-client sharing (GSKS and global PGPA consensus)."
+    )
     try:
         args = parser.parse_args()
     except IOError as msg:

@@ -66,10 +66,14 @@ def run_fedSSP(args, clients, server, COMMUNICATION_ROUNDS, local_epoch, samp=No
             for cid, w in zip(server.uploaded_ids, server.uploaded_weights):
                 global_consensus += server.clients[cid].current_mean * w
             for client in server.selected_clients:
-                client.global_consensus = global_consensus.data.clone()
-            server.receive_models_SSP()
-            server.aggregate_parameters_SSP()
-            server.send_models_SSP()
+                if not args.disable_federation:
+                    client.global_consensus = global_consensus.data.clone()
+                else:
+                    client.global_consensus = None
+            if not args.disable_federation and not args.disable_gsks_federation:
+                server.receive_models_SSP()
+                server.aggregate_parameters_SSP()
+                server.send_models_SSP()
 
         else:
             tot_samples = 0
@@ -85,7 +89,10 @@ def run_fedSSP(args, clients, server, COMMUNICATION_ROUNDS, local_epoch, samp=No
                 w = 1 / len(server.selected_clients)
                 global_consensus += server.clients[cid].current_mean * w
             for client in server.selected_clients:
-                client.global_consensus = global_consensus.data.clone()
+                if not args.disable_federation:
+                    client.global_consensus = global_consensus.data.clone()
+                else:
+                    client.global_consensus = None
 
         round_elapsed = time.time() - round_start
         total_elapsed = time.time() - start_time
