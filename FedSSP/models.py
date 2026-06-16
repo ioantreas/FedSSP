@@ -4,7 +4,6 @@ from torch_geometric.nn import GCNConv, GINConv, global_add_pool, SAGEConv
 import math
 import torch.nn as nn
 from ogb.utils.features import get_atom_feature_dims, get_bond_feature_dims
-from dgl.nn.pytorch.glob import AvgPooling
 from dgl import function as fn
 from dgl.ops.edge_softmax import edge_softmax
 
@@ -153,7 +152,6 @@ class SSP(nn.Module):
         )
         self.decoder = nn.Linear(hidden_dim, nheads)  
         self.convs = nn.ModuleList([Conv(hidden_dim, feat_dropout) for _ in range(nlayer)])
-        self.pool = AvgPooling()  
         self.fc = nn.Linear(hidden_dim, nclass)
 
     def forward(self, e, u, g, length, x, masks=None):
@@ -168,6 +166,10 @@ class SSP(nn.Module):
         x = self.atom_encoder(x)
 
         eig = self.eig_encoder_s(e)
+        
+        # DEBUG: Log eigenvalue encoding
+        print(f"[DEBUG] Input e shape: {e.shape}, mean: {e.mean():.6f}, std: {e.std():.6f}")
+        print(f"[DEBUG] After eig_encoder_s - shape: {eig.shape}, mean: {eig.mean():.6f}, std: {eig.std():.6f}")
 
         mha_eig = self.mha_norm(eig)
         mha_eig, attn = self.mha(
@@ -183,24 +185,52 @@ class SSP(nn.Module):
         new_e = self.decoder(eig).transpose(2, 1)
         diag_e = torch.diag_embed(new_e)
 
+        # DEBUG: Log decoder output
+        print(f"[DEBUG] new_e (decoded eigenvalues) - mean: {new_e.mean():.6f}, std: {new_e.std():.6f}")
+        print(f"[DEBUG] new_e min: {new_e.min():.6f}, max: {new_e.max():.6f}")
+        print(f"[DEBUG] new_e sample (first batch, first 5): {new_e[0, :5, :5]}")
+        
         identity = torch.diag_embed(torch.ones_like(e))
         bases = [identity]
         for i in range(self.nheads):
             filters = u @ diag_e[:, i, :, :] @ ut
             bases.append(filters)
+            # DEBUG: Log filter basis
+            if i == 0:
+                print(f"[DEBUG] Filter basis {i} - mean: {filters.mean():.6f}, std: {filters.std():.6f}")
 
         bases = torch.stack(bases, axis=-1)
 
         bases = bases[edge_real]
 
+        # DEBUG: Log filter statistics before filter_encoder_s
+        print(f"[DEBUG] Raw bases shape: {bases.shape}")
+        print(f"[DEBUG] Raw bases mean: {bases.mean():.6f}, std: {bases.std():.6f}")
+        print(f"[DEBUG] Raw bases min: {bases.min():.6f}, max: {bases.max():.6f}")
+        if bases.numel() > 0:
+            print(f"[DEBUG] Raw bases sample (first 5 edges):\n{bases[:5]}")
+        
         bases = self.adj_dropout(self.filter_encoder_s(bases))
+        
+        # DEBUG: Log after filter_encoder_s
+        print(f"[DEBUG] After filter_encoder_s - mean: {bases.mean():.6f}, std: {bases.std():.6f}")
+        print(f"[DEBUG] After filter_encoder_s - min: {bases.min():.6f}, max: {bases.max():.6f}")
 
         bases = edge_softmax(g, bases)
 
         for layer_idx, conv in enumerate(self.convs):
             x = conv(g, x, bases)
 
-        h = self.pool(g, x)
+        # Average pooling per graph using length information
+        batch_size = len(length)
+        pooled = []
+        node_idx = 0
+        for i in range(batch_size):
+            graph_size = length[i].item()
+            graph_nodes = x[node_idx:node_idx+graph_size]
+            pooled.append(graph_nodes.mean(dim=0, keepdim=True))
+            node_idx += graph_size
+        h = torch.cat(pooled, dim=0)
         h = self.fc(h)
 
         return h
