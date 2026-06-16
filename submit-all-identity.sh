@@ -67,13 +67,13 @@ echo "=============================="
 echo " START TRAINING"
 echo "=============================="
 
-for seed in 1 2 3 4 5
+for seed in 3
 do
     echo "=============================="
     echo " RUNNING SEED $seed"
     echo "=============================="
 
-    for dataset in "chem" "biochem" "chemcv" "biochemsn" "biosncv" "chemsncv"
+    for dataset in "chemsncv"
     do
         echo " Running $dataset in $seed "
         srun python FedSSP/main_multiDS.py \
