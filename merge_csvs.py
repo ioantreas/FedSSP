@@ -5,16 +5,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy import stats
 
-DATASET = ["chem", "biochem", "chemcv", "biochemsn", "biosncv", "chemsncv"]
-SPEPCTRAL_MODES = ["identity"]
-NUM_RUNS = 5
+DATASETS = ["biosncv"]
+SPEPCTRAL_MODES = ["full", "identity", "chebyshev", "topk"]
+NUM_RUNS = 10
 NUM_ROUNDS = 200
-
-
-def _as_list(value):
-    if isinstance(value, (list, tuple, set)):
-        return list(value)
-    return [value]
 
 
 def _read_metrics_file(path):
@@ -53,7 +47,7 @@ def _mean_and_std(values):
 
 
 def main():
-    datasets = _as_list(DATASET)
+    datasets = DATASETS
 
     round_rows = []
     summary_rows = []
@@ -64,6 +58,7 @@ def main():
         dataset_round_accs = {}
         dataset_round_stds = {}
         dataset_last_accuracies = {}
+        dataset_preprocessing_durations = {}
 
         for spectral_mode in SPEPCTRAL_MODES:
             last_accuracies = []
@@ -99,6 +94,7 @@ def main():
             dataset_round_accs[spectral_mode] = round_accs
             dataset_round_stds[spectral_mode] = round_stds
             dataset_last_accuracies[spectral_mode] = last_accuracies
+            dataset_preprocessing_durations[spectral_mode] = preprocessing_durations
 
             round_rows.extend([
                 [dataset, spectral_mode, round_idx + 1, round_accs[round_idx], round_stds[round_idx]]
@@ -126,6 +122,14 @@ def main():
                 print(dataset, kruskal_test)
             except Exception as e:
                 print(f"Skipping Kruskal for {dataset}: {e}")
+
+        kruskal_values = [np.atleast_1d(dataset_preprocessing_durations.get(mode)) for mode in SPEPCTRAL_MODES if dataset_preprocessing_durations.get(mode) is not None]
+        if len(kruskal_values) == len(SPEPCTRAL_MODES) and all(len(values) > 0 for values in kruskal_values):
+            try:
+                kruskal_test = stats.kruskal(*kruskal_values)
+                print(dataset, "preprocessing", kruskal_test)
+            except Exception as e:
+                print(f"Skipping preprocessing Kruskal for {dataset}: {e}")
 
         if dataset_round_accs:
             round_accs_per_dataset[dataset] = dataset_round_accs
@@ -164,8 +168,7 @@ def main():
         ax.set_title(dataset)
         ax.set_xlabel("Round")
         ax.set_ylabel("Accuracy")
-        ax.set_xlim(10, NUM_ROUNDS)
-        ax.set_ylim(0.65, 0.8)
+        
         ax.legend()
 
     for idx in range(len(plottable_datasets), nrows * ncols):
@@ -173,6 +176,8 @@ def main():
 
     fig.tight_layout()
     fig.savefig("results_full.png")
+    ax.set_xlim(10, NUM_ROUNDS)
+    ax.set_ylim(0.65, 0.8)
     fig.savefig("results_cropped.png")
 
 
